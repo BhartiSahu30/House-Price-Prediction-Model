@@ -1,3 +1,4 @@
+import plotly.express as px
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -90,32 +91,42 @@ model = pickle.load(
 # SIDEBAR
 # =====================================
 
+# =====================================
+# SIDEBAR INPUTS
+# =====================================
+
 st.sidebar.header("🏡 House Features")
 
+# BHK Slider
 bhk = st.sidebar.slider(
-    "BHK",
-    1,
-    10,
-    3
+    "Select BHK",
+    min_value=1,
+    max_value=10,
+    value=3,
+    step=1
 )
 
+# Square Feet Slider
 sqft = st.sidebar.slider(
-    "Square Feet",
-    500,
-    10000,
-    1500
+    "Select Square Feet",
+    min_value=500,
+    max_value=10000,
+    value=1500,
+    step=100
 )
 
+# Location Dropdown
 location = st.sidebar.selectbox(
-    "Location",
+    "Select Location",
     sorted(df["location"].unique())
 )
 
+# Property Type Dropdown
 propertytype = st.sidebar.selectbox(
-    "Property Type",
+    "Select Property Type",
     sorted(df["propertytype"].unique())
 )
-
+st.sidebar.markdown("---")
 # =====================================
 # METRIC CARDS
 # =====================================
@@ -214,7 +225,6 @@ if st.button("🔍 Predict House Price"):
     st.success(
         f"Estimated House Price: ₹ {prediction:,.2f}"
     )
-
 # =====================================
 # TABS
 # =====================================
@@ -228,29 +238,53 @@ tab1, tab2, tab3 = st.tabs([
 # =====================================
 # TAB 1
 # =====================================
-
 with tab1:
 
-    st.subheader("Price Distribution")
+    st.subheader("📊 Real-Time Price Distribution Analysis")
 
-    st.bar_chart(df["totalprice"].head(20))
+    # Filter dataset based on selected inputs
+    filtered_df = df[
+        (df["location"] == location) &
+        (df["bhk"] == bhk)
+    ]
 
-# =====================================
-# TAB 2
-# =====================================
+    # If no exact match found
+    if filtered_df.empty:
 
-with tab2:
+        filtered_df = df[
+            (df["location"] == location)
+        ]
 
-    st.subheader("Correlation Heatmap")
-
-    fig, ax = plt.subplots(figsize=(10,6))
-
-    sns.heatmap(
-        df.corr(numeric_only=True),
-        ax=ax
+    # Interactive Plotly Graph
+    fig = px.bar(
+        filtered_df.head(20),
+        x="sqft",
+        y="totalprice",
+        color="totalprice",
+        hover_data=[
+            "bhk",
+            "propertytype"
+        ],
+        title=f"House Prices in {location}",
+        labels={
+            "sqft": "Square Feet",
+            "totalprice": "House Price (₹)"
+        }
     )
 
-    st.pyplot(fig)
+    # Layout Styling
+    fig.update_layout(
+        template="plotly_dark",
+        xaxis_title="Square Feet",
+        yaxis_title="House Price (₹)",
+        height=600
+    )
+
+    # Show Graph
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
 
 # =====================================
 # TAB 3
@@ -258,10 +292,9 @@ with tab2:
 
 with tab3:
 
-    st.subheader("Dataset Preview")
+    st.subheader("🗂 Dataset Preview")
 
     st.dataframe(df.head())
-
 # =====================================
 # FOOTER
 # =====================================
